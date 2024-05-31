@@ -1,4 +1,9 @@
 # Byte-compiled / optimized / DLL files
+*.pyc
+#*/migrations/
+media/
+static/
+staticfiles/
 __pycache__/
 .idea
 .idea/

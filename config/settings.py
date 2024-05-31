@@ -18,6 +18,9 @@ from pathlib import Path
 load_dotenv()
 database_name = os.getenv('DATABASE_NAME')
 database_user = os.getenv('DATABASE_USER')
+database_password = os.getenv('DATABASE_PASSWORD')
+PRODUCTION = int(os.getenv("PRODUCTION"))
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -55,6 +58,7 @@ INSTALLED_APPS += [
     'drf_spectacular',
     'rest_framework_simplejwt',
     'corsheaders',
+    'debug_toolbar',
 ]
 
 # Our apps
@@ -64,11 +68,13 @@ INSTALLED_APPS += []
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -107,12 +113,19 @@ DATABASES = {
 #         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': database_name,
 #         'USER': database_user,
-#         'PASSWORD': postgre_password,
+#         'PASSWORD': database_password,
 #         'HOST': 'localhost',
 #         'PORT': '5432',
 #     }
 # }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/0",
+        "TIMEOUT": None,
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -162,6 +175,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
     'EXCEPTION_HANDLER': 'utils.customized_exceptions.custom_exception_handler',
 
 }
@@ -170,6 +186,15 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=180),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+    # CHANNEL_LAYERS = {
+    #     'default': {
+    #         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+    #         'CONFIG': {
+    #             'hosts': [('127.0.0.1', 6379, 1)]
+    #         },
+    #     },
+    # }
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Your Title',
@@ -187,3 +212,22 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = ["https://example.com"]
+
+if not PRODUCTION:
+    extra_apps = ["debug_toolbar"]
+    INSTALLED_APPS += extra_apps
+
+    extra_middleware = [
+
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+    ]
+    MIDDLEWARE += extra_middleware
+else:
+    extra_middleware = [
+        "utils.middlewares.SendErrorToBotMiddleware",
+    ]
+    MIDDLEWARE += extra_middleware
+
+    extra_apps = []
+    INSTALLED_APPS += extra_apps
+
