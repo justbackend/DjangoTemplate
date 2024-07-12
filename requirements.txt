@@ -5,3 +5,5 @@ drf-spectacular
 django-cors-headers
 djangorestframework-simplejwt
 requests
+django-debug-toolbar
+Pillow
